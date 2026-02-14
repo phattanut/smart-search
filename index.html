@@ -7,9 +7,16 @@
   <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
   <script src="https://cdn.tailwindcss.com"></script>
 </head>
-<body class="bg-gray-100 min-h-screen p-4">
+<body class="bg-gray-100 min-h-screen">
 
-  <div class="max-w-md mx-auto">
+  <div class="sticky top-0 bg-blue-600 p-4 shadow-md z-10">
+    <h1 class="text-white font-bold text-center mb-3 text-lg">💊 ค้นหารายชื่อยา</h1>
+    <input type="text" id="searchInput" onkeyup="filterData()" 
+           placeholder="พิมพ์ชื่อยาเพื่อค้นหา..." 
+           class="w-full p-4 rounded-full shadow-inner outline-none focus:ring-2 focus:ring-yellow-400 text-gray-700">
+  </div>
+
+  <div class="p-4 max-w-md mx-auto">
     <div id="loading" class="text-center py-10 text-blue-600 font-bold">
       ⌛ กำลังโหลดข้อมูลยา...
     </div>
@@ -18,36 +25,57 @@
   </div>
 
   <script>
+    // 🚩 ตรวจสอบ ID และ URL ให้ถูกต้องอีกครั้ง
     const LIFF_ID = "2009118674-AsObMNeg";
     const GAS_URL = "https://script.google.com/macros/s/AKfycbzF59JVoNgimkWCv4LIJ56QjJYbOY7_wUqCINLE1Sb5Gd7xtj8buaPbN9sTAf4sLYc/exec";
+    
+    let allDrugs = []; // เก็บข้อมูลยาชุดหลักไว้
 
     window.onload = async function() {
       try {
-        // 1. ดึงข้อมูลจาก GAS
         const response = await fetch(GAS_URL);
-        const drugs = await response.json();
+        allDrugs = await response.json();
         
-        // ซ่อนข้อความ Loading และแสดงข้อมูล
         document.getElementById('loading').style.display = 'none';
-        render(drugs); 
+        render(allDrugs); // แสดงผลครั้งแรก (ทั้งหมด)
 
-        // 2. เริ่ม LIFF
         await liff.init({ liffId: LIFF_ID });
         if(!liff.isLoggedIn()) liff.login();
         
       } catch (e) {
-        console.error(e);
         document.getElementById('loading').innerHTML = "❌ โหลดข้อมูลไม่สำเร็จ: " + e.message;
       }
     };
 
-    // --- ฟังก์ชันแสดงผล (ต้องมีอันนี้ด้วยครับ) ---
+    // --- ฟังก์ชันกรองข้อมูล (Search Logic) ---
+    function filterData() {
+      const query = document.getElementById('searchInput').value.toLowerCase();
+      // กรองข้อมูลที่ชื่อยา (item.name) มีคำที่ค้นหา
+      const filtered = allDrugs.filter(item => 
+        item.name.toLowerCase().includes(query)
+      );
+      render(filtered);
+    }
+
+    // --- ฟังก์ชันแสดงผลรายการยา ---
     function render(data) {
       const container = document.getElementById('drugList');
+      if (data.length === 0) {
+        container.innerHTML = '<p class="text-center text-gray-400 mt-10">ไม่พบข้อมูลยา</p>';
+        return;
+      }
+      
       container.innerHTML = data.map(item => `
-        <div onclick="send('${item.name}')" class="bg-white p-4 rounded-xl shadow-sm active:bg-blue-50 cursor-pointer border border-gray-200">
-          <div class="font-bold text-gray-800">${item.name}</div>
-          <div class="text-xs text-gray-400">${item.category || ''}</div>
+        <div onclick="send('${item.name}')" class="bg-white p-4 rounded-2xl shadow-sm active:scale-95 transition-all cursor-pointer border border-gray-100 flex justify-between items-center">
+          <div>
+            <div class="font-bold text-gray-800 text-lg">${item.name}</div>
+            <div class="text-xs text-gray-400">${item.category || ''}</div>
+          </div>
+          <div class="text-blue-500">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
+            </svg>
+          </div>
         </div>
       `).join('');
     }
