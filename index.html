@@ -1,0 +1,21 @@
+<script>
+  const LIFF_ID = "2009118674-AsObMNeg";
+  const GAS_URL = "https://script.google.com/macros/s/AKfycbzF59JVoNgimkWCv4LIJ56QjJYbOY7_wUqCINLE1Sb5Gd7xtj8buaPbN9sTAf4sLYc/exec"; // ลิงก์ที่ได้จาก GAS
+
+  window.onload = async function() {
+    // 1. ดึงข้อมูลยาจาก GAS ตรงๆ
+    const response = await fetch(GAS_URL);
+    const drugs = await response.json();
+    render(drugs); // ฟังก์ชันแสดงผลเหมือนเดิม
+
+    // 2. เริ่ม LIFF (บน GitHub สิทธิ์จะผ่านง่ายมาก)
+    await liff.init({ liffId: LIFF_ID });
+    if(!liff.isLoggedIn()) liff.login();
+  };
+  
+  function send(name) {
+    liff.sendMessages([{ type: 'text', text: name }])
+      .then(() => liff.closeWindow())
+      .catch(e => alert("Error: " + e.message));
+  }
+</script>
